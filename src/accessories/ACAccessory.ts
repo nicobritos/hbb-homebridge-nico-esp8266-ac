@@ -15,7 +15,12 @@ import {AccessoryPlugin} from 'homebridge/lib/api';
 import {APIUtils} from '../api/APIUtils';
 
 interface ACConfiguration extends AccessoryConfig {
-    url: string | undefined
+    url?: string,
+    temperature?: {
+        min?: number,
+        max?: number,
+        minStep?: number
+    }
 }
 
 /**
@@ -24,8 +29,8 @@ interface ACConfiguration extends AccessoryConfig {
  * Each accessory may expose multiple services of different service types.
  */
 export class ACAccessory implements AccessoryPlugin {
-    private informationService: Service;
-    private service: Service;
+    private readonly informationService: Service;
+    private readonly service: Service;
     private ac: AC = new AC();
     private log: Logging;
     private hap: HAP;
@@ -36,11 +41,9 @@ export class ACAccessory implements AccessoryPlugin {
         this.hap = api.hap;
         this.config = config as ACConfiguration;
 
-        if (!this.config.url) {
-            throw new Error("URL not supplied");
-        }
+        this.validateConfiguration();
 
-        APIUtils.URL = this.config.url;
+        APIUtils.URL = this.config.url!;
 
         this.service = new this.hap.Service.Thermostat(config.name);
 
@@ -51,10 +54,20 @@ export class ACAccessory implements AccessoryPlugin {
             .on(CharacteristicEventTypes.SET, this.setMode.bind(this))
             .on(CharacteristicEventTypes.GET, this.getMode.bind(this));
         this.service.getCharacteristic(this.hap.Characteristic.CurrentTemperature)
-            .on(CharacteristicEventTypes.GET, this.getTemperature.bind(this));
+            .on(CharacteristicEventTypes.GET, this.getTemperature.bind(this))
+            .setProps({
+                maxValue: this.config.temperature!.max!,
+                minValue: this.config.temperature!.min!,
+                minStep: this.config.temperature!.minStep!
+            });
         this.service.getCharacteristic(this.hap.Characteristic.TargetTemperature)
             .on(CharacteristicEventTypes.SET, this.setTemperature.bind(this))
-            .on(CharacteristicEventTypes.GET, this.getTemperature.bind(this));
+            .on(CharacteristicEventTypes.GET, this.getTemperature.bind(this))
+            .setProps({
+                maxValue: this.config.temperature!.max!,
+                minValue: this.config.temperature!.min!,
+                minStep: this.config.temperature!.minStep!
+            });
         this.service.getCharacteristic(this.hap.Characteristic.TemperatureDisplayUnits)
             .on(CharacteristicEventTypes.SET, this.setTemperatureDisplayUnits.bind(this))
             .on(CharacteristicEventTypes.GET, this.getTemperatureDisplayUnits.bind(this));
@@ -220,5 +233,13 @@ export class ACAccessory implements AccessoryPlugin {
         if (mode === this.hap.Characteristic.TargetHeatingCoolingState.OFF) return ACMode.OFF;
         if (mode === this.hap.Characteristic.TargetHeatingCoolingState.HEAT) return ACMode.HOT;
         return ACMode.COLD;
+    }
+
+    private validateConfiguration(): void {
+        if (!this.config.url) throw new Error("URL not supplied");
+        if (!this.config.temperature) this.config.temperature = {};
+        if (!this.config.temperature.max) this.config.temperature.max = 32;
+        if (!this.config.temperature.min) this.config.temperature.min = 18;
+        if (!this.config.temperature.minStep) this.config.temperature.minStep = 1;
     }
 }
