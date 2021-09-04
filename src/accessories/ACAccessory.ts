@@ -206,17 +206,7 @@ export class ACAccessory implements AccessoryPlugin {
                     ? Number.parseInt(value.data.targetTemperature)
                     : value.data.targetTemperature;
 
-                this.service.updateCharacteristic(
-                    this.hap.Characteristic.CurrentHeatingCoolingState,
-                    this.translateToHomekit(this.ac.mode)
-                );
-                this.service.updateCharacteristic(
-                    this.hap.Characteristic.TargetHeatingCoolingState,
-                    this.translateToHomekit(this.ac.mode)
-                );
-
-                this.service.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ac.temperature);
-                this.service.updateCharacteristic(this.hap.Characteristic.TargetTemperature, this.ac.temperature);
+                this.setRefreshState();
             })
             .catch(reason => {
                 this.log.error("Error getting state for light bulb: " + reason);
@@ -241,5 +231,19 @@ export class ACAccessory implements AccessoryPlugin {
         if (!this.config.temperature.max) this.config.temperature.max = 32;
         if (!this.config.temperature.min) this.config.temperature.min = 18;
         if (!this.config.temperature.minStep) this.config.temperature.minStep = 1;
+    }
+
+    private setRefreshState(): void {
+        this.service.updateCharacteristic(
+            this.hap.Characteristic.CurrentHeatingCoolingState,
+            this.translateToHomekit(this.ac.mode)
+        );
+        this.service.updateCharacteristic(
+            this.hap.Characteristic.TargetHeatingCoolingState,
+            this.translateToHomekit(this.ac.mode)
+        );
+
+        this.service.updateCharacteristic(this.hap.Characteristic.CurrentTemperature, this.ac.temperature);
+        this.service.updateCharacteristic(this.hap.Characteristic.TargetTemperature, this.ac.temperature);
     }
 }
