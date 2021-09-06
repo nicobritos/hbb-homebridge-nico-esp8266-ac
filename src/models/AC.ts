@@ -12,8 +12,8 @@ export enum ACMode {
 }
 
 export class AC {
-    private _mode: ACMode = ACMode.OFF;
-    private _temperature: number = 22;
+    private _mode: ACMode;
+    private _temperature: number;
 
     public get mode(): ACMode {
         return this._mode;
